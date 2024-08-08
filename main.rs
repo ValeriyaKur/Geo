@@ -1,23 +1,20 @@
 use pyo3::prelude::*;
 use geopolars::geodataframe::GeoDataFrame;
-use rstar::RTree;
+use rstar::{RTree, AABB};
 
 #[pyfunction]
-fn spatial_join(_py: Python, data1: &amp;GeoDataFrame, data2: &amp;GeoDataFrame) -> GeoDataFrame {
+fn spatial_join(_py: Python, data1: &GeoDataFrame, data2: &GeoDataFrame) -> GeoDataFrame {
     // Создаем пространственный индекс для data2
     let tree = RTree::bulk_load(data2.geometry().iter().cloned().zip(data2.iter()));
 
     // Производим пространственное соединение
-    let result = data1
+    let result: Vec<_> = data1
         .geometry()
         .iter()
         .enumerate()
-        .map(|(idx, geom)| {
-            let mut joined_data = vec![];
-            for (_, obj) in tree.locate_in_envelope(&amp;geom.envelope()) {
-                joined_data.push((idx, obj));
-            }
-            joined_data
+        .flat_map(|(idx, geom)| {
+            tree.locate_in_envelope(&geom.envelope())
+                .map(move |(_, obj)| (idx, obj))
         })
         .collect();
 
@@ -29,8 +26,7 @@ fn spatial_join(_py: Python, data1: &amp;GeoDataFrame, data2: &amp;GeoDataFrame)
 }
 
 #[pymodule]
-fn spatial_index(_py: Python, m: &amp;PyModule) -> PyResult<()> {
+fn spatial_index(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(spatial_join, m)?)?;
-
     Ok(())
 }
