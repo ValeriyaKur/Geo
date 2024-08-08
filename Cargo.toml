@@ -1,0 +1,10 @@
+[package]
+name = "spatial_index"
+version = "0.1.0"
+edition = "2021"
+
+# Add dependencies
+[dependencies]
+pyo3 = { version = "0.22.2", features = ["extension-module"] }
+geopolars = "0.1.0-alpha.3"
+rstar = "0.12.0"
